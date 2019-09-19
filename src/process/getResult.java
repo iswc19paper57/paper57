@@ -5,6 +5,7 @@ import beans.triple;
 import util.DBconnecter;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashMap;
@@ -84,6 +85,7 @@ public class getResult {
     public static void main(String[] args){
         getResult snipEval = new getResult();
         Evaluations eva = new Evaluations();
+        Connection connection = new DBconnecter().conn;
         double cokyw1 = 0, cocnx1 = 0, coskm1 = 0, codat1 = 0;
         double cokyw2 = 0, cocnx2 = 0, coskm2 = 0, codat2 = 0;
         double cokyw3 = 0, cocnx3 = 0, coskm3 = 0, codat3 = 0;
@@ -92,7 +94,15 @@ public class getResult {
             Statement st = snipEval.con.createStatement();
             String sql = "select * from snippet_generation_result";//total: 387 rows
             ResultSet rs = st.executeQuery(sql);
+            int i = Integer.parseInt(args[0]);
+            int j = 0;
             while (rs.next()){
+                if (j < i){
+                    j++;
+                    continue;
+                }
+                i++;
+                j++;
                 int id = rs.getInt("dataset_local_id");
                 String keyword = rs.getString("keyword");
                 String[] kws = keyword.split(" ");
@@ -102,46 +112,58 @@ public class getResult {
                 }
                 String illu = rs.getString("IlluSnip");
                 Set<triple>s = snipEval.formSnippet(id, illu);
-                cokyw1 += eva.coKyw(s, snipEval.keywords);
-                cocnx1 += eva.coCnx(s, snipEval.keywords, id);
-                coskm1 += eva.coSkm(s, id);
-                codat1 += eva.coDat(s, id);
+                cokyw1 = eva.coKyw(s, snipEval.keywords);
+                cocnx1 = eva.coCnx(s, snipEval.keywords, id);
+                coskm1 = eva.coSkm(s, id);
+                codat1 = eva.coDat(s, id);
 
                 String tac = rs.getString("TAC");
                 s = snipEval.formSnippet(id, tac);
-                cokyw2 += eva.coKyw(s, snipEval.keywords);
-                cocnx2 += eva.coCnx(s, snipEval.keywords, id);
-                coskm2 += eva.coSkm(s, id);
-                codat2 += eva.coDat(s, id);
+                cokyw2 = eva.coKyw(s, snipEval.keywords);
+                cocnx2 = eva.coCnx(s, snipEval.keywords, id);
+                coskm2 = eva.coSkm(s, id);
+                codat2 = eva.coDat(s, id);
 
                 String pruned = rs.getString("PrunedDP");
                 s = snipEval.formSnippet(id, pruned);
-                if(id==27||id==191||id==247){cokyw3 += 1;cocnx3 += 1;}
+                if(id==27||id==191||id==247){cokyw3 = 1;cocnx3 = 1;}
                 else {
-                    cokyw3 += eva.coKyw(s, snipEval.keywords);
-                    cocnx3 += eva.coCnx(s, snipEval.keywords, id);
+                    cokyw3 = eva.coKyw(s, snipEval.keywords);
+                    cocnx3 = eva.coCnx(s, snipEval.keywords, id);
                 }
-                coskm3 += eva.coSkm(s, id);
-                codat3 += eva.coDat(s, id);
-
+                coskm3 = eva.coSkm(s, id);
+                codat3 = eva.coDat(s, id);
                 String ces = rs.getString("CES");
                 s = snipEval.formSnippet(id, ces);
-                cokyw4 += eva.coKyw(s, snipEval.keywords);
-                cocnx4 += eva.coCnx(s, snipEval.keywords, id);
-                coskm4 += eva.coSkm(s, id);
-                codat4 += eva.coDat(s, id);
+                cokyw4 = eva.coKyw(s, snipEval.keywords);
+                cocnx4 = eva.coCnx(s, snipEval.keywords, id);
+                coskm4 = eva.coSkm(s, id);
+                codat4 = eva.coDat(s, id);
+                PreparedStatement preparedStatement = connection.prepareStatement("insert into evaluation_result" +
+                        "(id,k1,c1,s1,d1,k2,c2,s2,d2,k3,c3,s3,d3,k4,c4,s4,d4)" +
+                        "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                preparedStatement.setInt(1, i);
+                preparedStatement.setDouble(2,cokyw1);
+                preparedStatement.setDouble(3,cocnx1);
+                preparedStatement.setDouble(4,coskm1);
+                preparedStatement.setDouble(5,codat1);
+                preparedStatement.setDouble(6,cokyw2);
+                preparedStatement.setDouble(7,cocnx2);
+                preparedStatement.setDouble(8,coskm2);
+                preparedStatement.setDouble(9,codat2);
+                preparedStatement.setDouble(10,cokyw3);
+                preparedStatement.setDouble(11,cocnx3);
+                preparedStatement.setDouble(12,coskm3);
+                preparedStatement.setDouble(13,codat3);
+                preparedStatement.setDouble(14,cokyw4);
+                preparedStatement.setDouble(15,cocnx4);
+                preparedStatement.setDouble(16,coskm4);
+                preparedStatement.setDouble(17,codat4);
+                preparedStatement.executeUpdate();
             }
             snipEval.con.close();
         }catch (Exception e){
             e.printStackTrace();
         }
-        cokyw1 = cokyw1/387; cocnx1 = cocnx1/387; coskm1 = coskm1/387; codat1 = codat1/387;
-        cokyw2 = cokyw2/387; cocnx2 = cocnx2/387; coskm2 = coskm2/387; codat2 = codat2/387;
-        cokyw3 = cokyw3/387; cocnx3 = cocnx3/387; coskm3 = coskm3/387; codat3 = codat3/387;
-        cokyw4 = cokyw4/387; cocnx4 = cocnx4/387; coskm4 = coskm4/387; codat4 = codat4/387;
-        System.out.println("coKyw1 = "+cokyw1+"; "+"coCnx1 = "+cocnx1+"; "+"coSkm1 = "+coskm1+"; "+"coDat1 = "+codat1);
-        System.out.println("coKyw2 = "+cokyw2+"; "+"coCnx2 = "+cocnx2+"; "+"coSkm2 = "+coskm2+"; "+"coDat2 = "+codat2);
-        System.out.println("coKyw3 = "+cokyw3+"; "+"coCnx3 = "+cocnx3+"; "+"coSkm3 = "+coskm3+"; "+"coDat3 = "+codat3);
-        System.out.println("coKyw4 = "+cokyw4+"; "+"coCnx4 = "+cocnx4+"; "+"coSkm4 = "+coskm4+"; "+"coDat4 = "+codat4);
     }
 }
